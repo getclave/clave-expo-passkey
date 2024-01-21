@@ -1,5 +1,5 @@
 {
-  "name": "clave-expo-passkey",
+  "name": "@getclave/expo-passkey",
   "version": "0.1.0",
   "description": "Expo module for interacting with Passkeys in Clave",
   "main": "build/index.js",
