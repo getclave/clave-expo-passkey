@@ -1,46 +1,134 @@
 package expo.modules.expoclavepasskey
 
-import expo.modules.kotlin.modules.Module
-import expo.modules.kotlin.modules.ModuleDefinition
+import android.content.Context
+import expo.modules.core.interfaces.ExpoMethod
+import expo.modules.core.ModuleRegistry
+import expo.modules.core.ExportedModule
+import expo.modules.core.Promise
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import expo.modules.core.interfaces.ActivityProvider
+import android.app.Activity
+import androidx.credentials.CredentialManager
+import androidx.credentials.CreatePublicKeyCredentialRequest
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.GetPublicKeyCredentialOption
+import androidx.credentials.exceptions.*
+import androidx.credentials.exceptions.publickeycredential.CreatePublicKeyCredentialDomException
+import androidx.credentials.exceptions.publickeycredential.GetPublicKeyCredentialDomException
+import expo.modules.core.errors.ModuleDestroyedException
 
-class ExpoClavePasskeyModule : Module() {
-  // Each module class must implement the definition function. The definition consists of components
-  // that describes the module's functionality and behavior.
-  // See https://docs.expo.dev/modules/module-api for more details about available components.
-  override fun definition() = ModuleDefinition {
-    // Sets the name of the module that JavaScript code will use to refer to the module. Takes a string as an argument.
-    // Can be inferred from module's class name, but it's recommended to set it explicitly for clarity.
-    // The module will be accessible from `requireNativeModule('ExpoClavePasskey')` in JavaScript.
-    Name("ExpoClavePasskey")
+const val REGISTRATION_RESPONSE = "androidx.credentials.BUNDLE_KEY_REGISTRATION_RESPONSE_JSON"
+const val AUTH_RESPONSE = "androidx.credentials.BUNDLE_KEY_AUTHENTICATION_RESPONSE_JSON"
 
-    // Sets constant properties on the module. Can take a dictionary or a closure that returns a dictionary.
-    Constants(
-      "PI" to Math.PI
-    )
+class ExpoClavePasskeyModule(context: Context) : ExportedModule(context) {
 
-    // Defines event names that the module can send to JavaScript.
-    Events("onChange")
+  private val moduleCoroutineScope = CoroutineScope(Dispatchers.Default)
+  private lateinit var moduleRegistry: ModuleRegistry
 
-    // Defines a JavaScript synchronous function that runs the native code on the JavaScript thread.
-    Function("hello") {
-      "Hello world! 👋"
+  override fun onCreate(registry: ModuleRegistry) {
+    moduleRegistry = registry
+  }
+
+  override fun onDestroy() {
+    moduleCoroutineScope.cancel(ModuleDestroyedException())
+  }
+
+  override fun getName() = "ExpoClavePasskey"
+
+  private fun getCurrentActivity(): Activity? {
+    val activityProvider: ActivityProvider = moduleRegistry.getModule(ActivityProvider::class.java)
+    return activityProvider.currentActivity
+  }
+
+  @ExpoMethod
+  fun register(requestJSON: String, promise: Promise) {
+    val credentialManager = CredentialManager.create(context)
+    val createPublicKeyCredentialRequest = CreatePublicKeyCredentialRequest(requestJSON)
+    val currentActivity = getCurrentActivity()
+
+    moduleCoroutineScope.launch {
+      try {
+        val result = currentActivity?.let { credentialManager.createCredential(it, createPublicKeyCredentialRequest) }
+        val response = result?.data?.getString(REGISTRATION_RESPONSE)
+        promise.resolve(response)
+      } catch (e: CreateCredentialException) {
+        promise.reject("Passkey", handleRegistrationException(e))
+      }
     }
+  }
 
-    // Defines a JavaScript function that always returns a Promise and whose native code
-    // is by default dispatched on the different thread than the JavaScript runtime runs on.
-    AsyncFunction("setValueAsync") { value: String ->
-      // Send an event to JavaScript.
-      sendEvent("onChange", mapOf(
-        "value" to value
-      ))
+  @ExpoMethod
+  fun authenticate(requestJSON: String, promise: Promise) {
+    val credentialManager = CredentialManager.create(context)
+    val getCredentialRequest =
+      GetCredentialRequest(listOf(GetPublicKeyCredentialOption(requestJSON)))
+    val currentActivity = getCurrentActivity()
+
+    moduleCoroutineScope.launch {
+      try {
+        val result = currentActivity?.let { credentialManager.getCredential(it, getCredentialRequest) }
+        val response = result?.credential?.data?.getString(AUTH_RESPONSE)
+        promise.resolve(response)
+      } catch (e: GetCredentialException) {
+        promise.reject("Passkey", handleAuthenticationException(e))
+      }
     }
+  }
 
-    // Enables the module to be used as a native view. Definition components that are accepted as part of
-    // the view definition: Prop, Events.
-    View(ExpoClavePasskeyView::class) {
-      // Defines a setter for the `name` prop.
-      Prop("name") { view: ExpoClavePasskeyView, prop: String ->
-        println(prop)
+  private fun handleRegistrationException(e: CreateCredentialException): String {
+    when (e) {
+      is CreatePublicKeyCredentialDomException -> {
+        return e.domError.toString()
+      }
+      is CreateCredentialCancellationException -> {
+        return "UserCancelled"
+      }
+      is CreateCredentialInterruptedException -> {
+        return "Interrupted"
+      }
+      is CreateCredentialProviderConfigurationException -> {
+        return "NotConfigured"
+      }
+      is CreateCredentialUnknownException -> {
+        return "UnknownError"
+      }
+      is CreateCredentialUnsupportedException -> {
+        return "NotSupported"
+      }
+      else -> {
+        return e.toString()
+      }
+    }
+  }
+
+  private fun handleAuthenticationException(e: GetCredentialException): String {
+    when (e) {
+      is GetPublicKeyCredentialDomException -> {
+        return e.domError.toString()
+      }
+      is GetCredentialCancellationException -> {
+        return "UserCancelled"
+      }
+      is GetCredentialInterruptedException -> {
+        return "Interrupted"
+      }
+      is GetCredentialProviderConfigurationException -> {
+        return "NotConfigured"
+      }
+      is GetCredentialUnknownException -> {
+        return "UnknownError"
+      }
+      is GetCredentialUnsupportedException -> {
+        return "NotSupported"
+      }
+      is NoCredentialException -> {
+        return "NoCredentials"
+      }
+      else -> {
+        return e.toString()
       }
     }
   }

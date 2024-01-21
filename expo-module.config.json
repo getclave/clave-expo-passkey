@@ -1,9 +1,6 @@
 {
-  "platforms": ["apple", "android", "web"],
-  "apple": {
+  "platforms": ["ios", "android", "web"],
+  "ios": {
     "modules": ["ExpoClavePasskeyModule"]
-  },
-  "android": {
-    "modules": ["expo.modules.expoclavepasskey.ExpoClavePasskeyModule"]
   }
 }

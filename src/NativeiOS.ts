@@ -1,11 +1,11 @@
-import { handleNativeError } from './ClaveExpoPasskey.errors';
+import { handleNativeError } from './ExpoClavePasskey.errors';
 import {
     PasskeyAuthenticationRequest,
     PasskeyAuthenticationResult,
     PasskeyRegistrationRequest,
     PasskeyRegistrationResult,
-} from './ClaveExpoPasskey.types';
-import ClaveExpoPasskey from './ClaveExpoPasskeyModule';
+} from './ExpoClavePasskey.types';
+import ExpoClavePasskey from './ExpoClavePasskeyModule';
 
 export class NativeiOS {
     /**
@@ -24,7 +24,7 @@ export class NativeiOS {
             this.prepareRegistrationRequest(request);
 
         try {
-            const response = await ClaveExpoPasskey.register(
+            const response = await ExpoClavePasskey.register(
                 rpId,
                 challenge,
                 name,
@@ -79,7 +79,7 @@ export class NativeiOS {
         withSecurityKey = false,
     ): Promise<PasskeyAuthenticationResult> {
         try {
-            const response = await ClaveExpoPasskey.authenticate(
+            const response = await ExpoClavePasskey.authenticate(
                 request.rpId,
                 request.challenge,
                 request.allowCredentials?.map((credential) => credential.id),

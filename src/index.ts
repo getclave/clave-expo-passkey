@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import { NotSupportedError } from './ClaveExpoPasskey.errors';
+import { NotSupportedError } from './ExpoClavePasskey.errors';
 import {
     CreateOptions,
     PasskeyAuthenticationRequest,
@@ -7,7 +7,7 @@ import {
     PasskeyRegistrationRequest,
     PasskeyRegistrationResult,
     SignOptions,
-} from './ClaveExpoPasskey.types';
+} from './ExpoClavePasskey.types';
 import { NativeAndroid } from './NativeAndroid';
 import { NativeiOS } from './NativeiOS';
 import * as utils from './utils';
@@ -206,5 +206,5 @@ export class Passkey {
     }
 }
 
-export * from './ClaveExpoPasskey.types';
-export * from './ClaveExpoPasskey.errors';
+export * from './ExpoClavePasskey.types';
+export * from './ExpoClavePasskey.errors';

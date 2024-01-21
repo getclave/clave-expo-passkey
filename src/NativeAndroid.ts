@@ -1,11 +1,11 @@
-import { handleNativeError } from './ClaveExpoPasskey.errors';
+import { handleNativeError } from './ExpoClavePasskey.errors';
 import {
     PasskeyAuthenticationRequest,
     PasskeyAuthenticationResult,
     PasskeyRegistrationRequest,
     PasskeyRegistrationResult,
-} from './ClaveExpoPasskey.types';
-import ClaveExpoPasskey from './ClaveExpoPasskeyModule';
+} from './ExpoClavePasskey.types';
+import ExpoClavePasskey from './ExpoClavePasskeyModule';
 
 export class NativeAndroid {
     /**
@@ -20,7 +20,7 @@ export class NativeAndroid {
         const nativeRequest = this.prepareRequest(request);
 
         try {
-            const response = await ClaveExpoPasskey.register(
+            const response = await ExpoClavePasskey.register(
                 JSON.stringify(nativeRequest),
             );
             return this.handleNativeResponse(JSON.parse(response));
@@ -41,7 +41,7 @@ export class NativeAndroid {
         const nativeRequest = this.prepareRequest(request);
 
         try {
-            const response = await ClaveExpoPasskey.authenticate(
+            const response = await ExpoClavePasskey.authenticate(
                 JSON.stringify(nativeRequest),
             );
             return this.handleNativeResponse(JSON.parse(response));
