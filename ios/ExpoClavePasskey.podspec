@@ -10,9 +10,9 @@ Pod::Spec.new do |s|
   s.license        = package['license']
   s.author         = package['author']
   s.homepage       = package['homepage']
-  s.platform       = :ios, '13.4'
+  s.platform       = :ios, '13'
   s.swift_version  = '5.4'
-  s.source         = { git: 'https://github.com/zetsuboii/clave-expo-passkey' }
+  s.source         = { git: 'https://github.com/getclave/clave-expo-passkey' }
   s.static_framework = true
 
   s.dependency 'ExpoModulesCore'

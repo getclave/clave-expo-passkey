@@ -1,44 +1,242 @@
 import ExpoModulesCore
+import AuthenticationServices
 
 public class ExpoClavePasskeyModule: Module {
-  // Each module class must implement the definition function. The definition consists of components
-  // that describes the module's functionality and behavior.
-  // See https://docs.expo.dev/modules/module-api for more details about available components.
-  public func definition() -> ModuleDefinition {
-    // Sets the name of the module that JavaScript code will use to refer to the module. Takes a string as an argument.
-    // Can be inferred from module's class name, but it's recommended to set it explicitly for clarity.
-    // The module will be accessible from `requireNativeModule('ExpoClavePasskey')` in JavaScript.
-    Name("ExpoClavePasskey")
-
-    // Sets constant properties on the module. Can take a dictionary or a closure that returns a dictionary.
-    Constants([
-      "PI": Double.pi
-    ])
-
-    // Defines event names that the module can send to JavaScript.
-    Events("onChange")
-
-    // Defines a JavaScript synchronous function that runs the native code on the JavaScript thread.
-    Function("hello") {
-      return "Hello world! 👋"
+    var passKeyDelegate: PasskeyDelegate?
+    
+    public func definition() -> ModuleDefinition {
+        Name("ExpoClavePasskey")
+        
+        AsyncFunction("register") { ( identifier: String,
+                                      challenge: String,
+                                      displayName: String,
+                                      userId: String,
+                                      securityKey: Bool,
+                                      promise: Promise ) in
+            
+            // Convert challenge and userId to correct type
+            guard let challengeData = Data(base64Encoded: challenge) else {
+                promise.reject( PassKeyError.invalidChallenge.rawValue,
+                                PassKeyError.invalidChallenge.rawValue )
+                return
+            }
+            let userIdData: Data = RCTConvert.nsData(userId)
+            
+            // Check if Passkeys are supported on this OS version
+            if #available(iOS 15.0, *) {
+                let authController: ASAuthorizationController
+                
+                // Check if registration should proceed with a security key
+                if securityKey {
+                    // Create a new registration request with security key
+                    let securityKeyProvider = ASAuthorizationSecurityKeyPublicKeyCredentialProvider(
+                        relyingPartyIdentifier: identifier)
+                    let authRequest = securityKeyProvider.createCredentialRegistrationRequest(
+                        challenge: challengeData, displayName: displayName, name: displayName, userID: userIdData)
+                    authRequest.credentialParameters = [
+                        ASAuthorizationPublicKeyCredentialParameters(algorithm: ASCOSEAlgorithmIdentifier.ES256),
+                    ]
+                    authController = ASAuthorizationController(authorizationRequests: [authRequest])
+                } else {
+                    // Create a new registration request without security key
+                    let platformProvider = ASAuthorizationPlatformPublicKeyCredentialProvider(
+                        relyingPartyIdentifier: identifier)
+                    let authRequest = platformProvider.createCredentialRegistrationRequest(
+                        challenge: challengeData, name: displayName, userID: userIdData)
+                    authController = ASAuthorizationController(authorizationRequests: [authRequest])
+                }
+                
+                // Set up a PasskeyDelegate instance with a callback function
+                self.passKeyDelegate = PasskeyDelegate { error, result in
+                    // Check if authorization process returned an error and throw if thats the case
+                    if error != nil {
+                        let passkeyError = self.handleErrorCode(error: error!)
+                        promise.reject(passkeyError.rawValue, passkeyError.rawValue)
+                        return
+                    }
+                    
+                    // Check if the result object contains a valid registration result
+                    if let registrationResult = result?.registrationResult {
+                        // Return a NSDictionary instance with the received authorization data
+                        let authResponse: NSDictionary = [
+                            "rawAttestationObject": registrationResult.rawAttestationObject.base64EncodedString(),
+                            "rawClientDataJSON": registrationResult.rawClientDataJSON.base64EncodedString(),
+                        ]
+                        
+                        let authResult: NSDictionary = [
+                            "credentialID": registrationResult.credentialID.base64EncodedString(),
+                            "response": authResponse,
+                        ]
+                        promise.resolve(authResult)
+                    } else {
+                        // If result didn't contain a valid registration result throw an error
+                        promise.reject( PassKeyError.requestFailed.rawValue,
+                                        PassKeyError.requestFailed.rawValue )
+                    }
+                }
+                
+                if let passKeyDelegate = self.passKeyDelegate {
+                    // Perform the authorization request
+                    passKeyDelegate.performAuthForController(controller: authController)
+                }
+            } else {
+                // If Passkeys are not supported throw an error
+                promise.reject( PassKeyError.notSupported.rawValue,
+                                PassKeyError.notSupported.rawValue )
+            }
+        }
+        
+        AsyncFunction("authenticate") { ( identifier: String,
+                                          challenge: String,
+                                          allowedCredentials: [String],
+                                          securityKey: Bool,
+                                          promise: Promise ) in
+            // Convert challenge to correct type
+            guard let challengeData = Data(base64Encoded: challenge) else {
+                promise.reject( PassKeyError.invalidChallenge.rawValue,
+                                PassKeyError.invalidChallenge.rawValue )
+                return
+            }
+            
+            // Check if Passkeys are supported on this OS version
+            if #available(iOS 15.0, *) {
+                let authController: ASAuthorizationController
+                
+                // Check if authentication should proceed with a security key
+                if securityKey {
+                    // Create a new assertion request with security key
+                    let securityKeyProvider = ASAuthorizationSecurityKeyPublicKeyCredentialProvider(
+                        relyingPartyIdentifier: identifier)
+                    let authRequest = securityKeyProvider.createCredentialAssertionRequest(
+                        challenge: challengeData)
+                    authController = ASAuthorizationController(authorizationRequests: [authRequest])
+                } else {
+                    // Create a new assertion request without security key
+                    let platformProvider = ASAuthorizationPlatformPublicKeyCredentialProvider(
+                        relyingPartyIdentifier: identifier)
+                    let authRequest = platformProvider.createCredentialAssertionRequest(
+                        challenge: challengeData)
+                    
+                    if allowedCredentials.count > 0 {
+                        var credentials: [Data] = []
+                        for credential in allowedCredentials {
+                            guard let data = Data(base64Encoded: credential) else {
+                                promise.reject( PassKeyError.invalidChallenge.rawValue,
+                                                PassKeyError.invalidChallenge.rawValue )
+                                return
+                            }
+                            credentials.append(data)
+                        }
+                        authRequest.allowedCredentials = credentials.map {
+                            ASAuthorizationPlatformPublicKeyCredentialDescriptor(
+                                credentialID: $0)
+                        }
+                    }
+                    authController = ASAuthorizationController(authorizationRequests: [authRequest])
+                }
+                
+                // Set up a PasskeyDelegate instance with a callback function
+                self.passKeyDelegate = PasskeyDelegate { error, result in
+                    // Check if authorization process returned an error and throw if thats the case
+                    if error != nil {
+                        let passkeyError = self.handleErrorCode(error: error!)
+                        promise.reject(passkeyError.rawValue, passkeyError.rawValue)
+                        return
+                    }
+                    // Check if the result object contains a valid authentication result
+                    if let assertionResult = result?.assertionResult {
+                        // Return a NSDictionary instance with the received authorization data
+                        let authResponse: NSDictionary = [
+                            "rawAuthenticatorData": assertionResult.rawAuthenticatorData.base64EncodedString(),
+                            "rawClientDataJSON": assertionResult.rawClientDataJSON.base64EncodedString(),
+                            "signature": assertionResult.signature.base64EncodedString(),
+                        ]
+                        
+                        let authResult: NSDictionary = [
+                            "credentialID": assertionResult.credentialID.base64EncodedString(),
+                            "userID": String(decoding: assertionResult.userID, as: UTF8.self),
+                            "response": authResponse,
+                        ]
+                        promise.resolve(authResult)
+                    } else {
+                        // If result didn't contain a valid authentication result throw an error
+                        promise.reject( PassKeyError.requestFailed.rawValue,
+                                        PassKeyError.requestFailed.rawValue )
+                    }
+                }
+                
+                if let passKeyDelegate = self.passKeyDelegate {
+                    // Perform the authorization request
+                    passKeyDelegate.performAuthForController(controller: authController)
+                }
+            } else {
+                // If Passkeys are not supported throw an error
+                promise.reject( PassKeyError.notSupported.rawValue,
+                                PassKeyError.notSupported.rawValue )
+            }
+            
+        }
     }
-
-    // Defines a JavaScript function that always returns a Promise and whose native code
-    // is by default dispatched on the different thread than the JavaScript runtime runs on.
-    AsyncFunction("setValueAsync") { (value: String) in
-      // Send an event to JavaScript.
-      self.sendEvent("onChange", [
-        "value": value
-      ])
+    
+    // Handles ASAuthorization error codes
+    func handleErrorCode(error: Error) -> PassKeyError {
+        let errorCode = (error as NSError).code
+        switch errorCode {
+        case 1001:
+            return PassKeyError.cancelled
+        case 1004:
+            return PassKeyError.requestFailed
+        case 4004:
+            return PassKeyError.notConfigured
+        default:
+            return PassKeyError.unknown
+        }
     }
+}
 
-    // Enables the module to be used as a native view. Definition components that are accepted as part of the
-    // view definition: Prop, Events.
-    View(ExpoClavePasskeyView.self) {
-      // Defines a setter for the `name` prop.
-      Prop("name") { (view: ExpoClavePasskeyView, prop: String) in
-        print(prop)
-      }
-    }
-  }
+//
+// Passkey related types
+//
+
+enum PassKeyError: String, Error {
+    case notSupported = "NotSupported"
+    case requestFailed = "RequestFailed"
+    case cancelled = "UserCancelled"
+    case invalidChallenge = "InvalidChallenge"
+    case notConfigured = "NotConfigured"
+    case unknown = "UnknownError"
+}
+
+struct AuthRegistrationResult {
+    var passkey: PassKeyRegistrationResult
+    var type: PasskeyOperation
+}
+
+struct AuthAssertionResult {
+    var passkey: PassKeyAssertionResult
+    var type: PasskeyOperation
+}
+
+struct PassKeyResult {
+    var registrationResult: PassKeyRegistrationResult?
+    var assertionResult: PassKeyAssertionResult?
+}
+
+struct PassKeyRegistrationResult {
+    var credentialID: Data
+    var rawAttestationObject: Data
+    var rawClientDataJSON: Data
+}
+
+struct PassKeyAssertionResult {
+    var credentialID: Data
+    var rawAuthenticatorData: Data
+    var rawClientDataJSON: Data
+    var signature: Data
+    var userID: Data
+}
+
+enum PasskeyOperation {
+    case Registration
+    case Assertion
 }
