@@ -1,0 +1,10 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "clave-expo-passkey": ["../src/index"],
+      "clave-expo-passkey/*": ["../src/*"]
+    }
+  }
+}
