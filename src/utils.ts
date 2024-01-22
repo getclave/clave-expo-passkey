@@ -8,6 +8,10 @@ export const hextoBase64 = (hex: string) => {
     return Buffer.from(hex, 'hex').toString('base64');
 };
 
+export const base64ToBase64Url = (text: string) => {
+    return text.replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
+}
+
 /** Removes 0x from hex */
 export const parseHex = (hex: string): string => {
     if (hex.startsWith('0x')) {

@@ -5,6 +5,7 @@ import {
     PasskeyRegistrationRequest,
     PasskeyRegistrationResult,
 } from './ExpoClavePasskey.types';
+import * as utils from './utils';
 import ExpoClavePasskey from './ExpoClavePasskeyModule';
 
 export class NativeiOS {
@@ -61,8 +62,12 @@ export class NativeiOS {
             id: result.credentialID,
             rawId: result.credentialID,
             response: {
-                clientDataJSON: result.response.rawClientDataJSON,
-                attestationObject: result.response.rawAttestationObject,
+                clientDataJSON: utils.base64ToBase64Url(
+                    result.response.rawClientDataJSON,
+                ),
+                attestationObject: utils.base64ToBase64Url(
+                    result.response.rawAttestationObject,
+                ),
             },
         };
     }
@@ -101,9 +106,9 @@ export class NativeiOS {
             id: result.credentialID,
             rawId: result.credentialID,
             response: {
-                clientDataJSON: result.response.rawClientDataJSON,
-                authenticatorData: result.response.rawAuthenticatorData,
-                signature: result.response.signature,
+                clientDataJSON: utils.base64ToBase64Url(result.response.rawClientDataJSON),
+                authenticatorData: utils.base64ToBase64Url(result.response.rawAuthenticatorData),
+                signature: utils.base64ToBase64Url(result.response.signature),
                 userHandle: result.userID,
             },
         };
