@@ -11,6 +11,7 @@ public class ExpoClavePasskeyModule: Module {
                                       challenge: String,
                                       displayName: String,
                                       userId: String,
+                                      excludedCredentials: [String],
                                       securityKey: Bool,
                                       promise: Promise ) in
             
@@ -43,6 +44,15 @@ public class ExpoClavePasskeyModule: Module {
                         relyingPartyIdentifier: identifier)
                     let authRequest = platformProvider.createCredentialRegistrationRequest(
                         challenge: challengeData, name: displayName, userID: userIdData)
+                    
+                    // Try to parse excluded credentials and add it to the auth request
+                    do {
+                        let credentialDescriptors = try parseCredentials(excludedCredentials)
+                        authRequest.excludedCredentials = credentialDescriptors
+                    } catch let error as PassKeyError {
+                        promise.reject(error.rawValue, error.rawValue)
+                        return
+                    }
                     authController = ASAuthorizationController(authorizationRequests: [authRequest])
                 }
                 
@@ -117,20 +127,13 @@ public class ExpoClavePasskeyModule: Module {
                     let authRequest = platformProvider.createCredentialAssertionRequest(
                         challenge: challengeData)
                     
-                    if allowedCredentials.count > 0 {
-                        var credentials: [Data] = []
-                        for credential in allowedCredentials {
-                            guard let data = Data(base64Encoded: credential) else {
-                                promise.reject( PassKeyError.invalidChallenge.rawValue,
-                                                PassKeyError.invalidChallenge.rawValue )
-                                return
-                            }
-                            credentials.append(data)
-                        }
-                        authRequest.allowedCredentials = credentials.map {
-                            ASAuthorizationPlatformPublicKeyCredentialDescriptor(
-                                credentialID: $0)
-                        }
+                    // Try to parse included credentials and add it to the auth request
+                    do {
+                        let credentialDescriptors = try parseCredentials(allowedCredentials)
+                        authRequest.allowedCredentials = credentialDescriptors
+                    } catch let error as PassKeyError {
+                        promise.reject(error.rawValue, error.rawValue)
+                        return
                     }
                     authController = ASAuthorizationController(authorizationRequests: [authRequest])
                 }
@@ -191,6 +194,21 @@ public class ExpoClavePasskeyModule: Module {
         default:
             return PassKeyError.unknown
         }
+    }
+    
+    @available(iOS 15, *)
+    func parseCredentials(_ credentials: [String]) throws -> [ASAuthorizationPlatformPublicKeyCredentialDescriptor] {
+        guard credentials.count > 0 else { return [] }
+        
+        var credentials: [Data] = []
+        for credential in credentials {
+            guard let data = Data(base64Encoded: credential) else {
+                throw PassKeyError.invalidChallenge
+            }
+            credentials.append(data)
+        }
+        
+        return credentials.map { ASAuthorizationPlatformPublicKeyCredentialDescriptor(credentialID: $0) }
     }
 }
 

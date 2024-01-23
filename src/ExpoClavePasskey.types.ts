@@ -94,6 +94,7 @@ export interface CreateOptions extends CommonOptions {
   attestation: boolean;
   discoverable: string;
   withSecurityKey: boolean;
+  excludeCredentials: Array<string>;
 }
 
 export interface SignOptions extends CommonOptions {

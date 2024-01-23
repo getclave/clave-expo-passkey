@@ -12,6 +12,12 @@ import { NativeAndroid } from './NativeAndroid';
 import { NativeiOS } from './NativeiOS';
 import * as utils from './utils';
 
+const credentialIdToDescriptor = (credentialId: string) => ({
+    id: credentialId,
+    type: 'public-key',
+    transports: ['usb', 'ble', 'nfc', 'internal'],
+});
+
 export class Passkey {
     static generateCreateRequest(
         userId: string,
@@ -40,6 +46,9 @@ export class Passkey {
                 residentKey: options.discoverable ?? 'preferred',
                 requireResidentKey: options.discoverable === 'required',
             },
+            excludeCredentials: options.excludeCredentials?.map(
+                credentialIdToDescriptor,
+            ),
             attestation: options.attestation ? 'direct' : 'none',
         };
     }
@@ -52,13 +61,7 @@ export class Passkey {
         return {
             challenge,
             rpId: 'getclave.io',
-            allowCredentials: credentialIds.map((id) => {
-                return {
-                    id,
-                    type: 'public-key',
-                    transports: ['hybrid', 'usb', 'ble', 'nfc'],
-                };
-            }),
+            allowCredentials: credentialIds.map(credentialIdToDescriptor),
             userVerification: options.userVerification ?? 'required',
             timeout: options.timeout ?? 60000,
         };
