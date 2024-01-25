@@ -72,7 +72,7 @@ export class Passkey {
      *
      * @param userId The user's unique identifier
      * @param userName The user's name
-     * @param challenge The FIDO2 Challenge without formatting
+     * @param challenge The FIDO2 Challenge in hex format
      * @param options An object containing options for the registration process
      * @returns The FIDO2 Attestation Result in JSON format
      * @throws
@@ -85,6 +85,11 @@ export class Passkey {
     ): Promise<PasskeyRegistrationResult> {
         if (!Passkey.isSupported) {
             throw NotSupportedError;
+        }
+
+        challenge = utils.stripHexPrefix(challenge);
+        if (!utils.isValidHex(challenge)) {
+            throw new Error('Invalid hex challenge');
         }
 
         const challengeBase64 = utils.hextoBase64(challenge);
@@ -123,6 +128,11 @@ export class Passkey {
     ): Promise<string> {
         if (!Passkey.isSupported) {
             throw NotSupportedError;
+        }
+
+        challenge = utils.stripHexPrefix(challenge);
+        if (!utils.isValidHex(challenge)) {
+            throw new Error('Invalid hex challenge');
         }
 
         const challengeBase64 = utils.hextoBase64(challenge);
@@ -169,6 +179,11 @@ export class Passkey {
     ): Promise<PasskeyAuthenticationResult> {
         if (!Passkey.isSupported) {
             throw NotSupportedError;
+        }
+
+        challenge = utils.stripHexPrefix(challenge);
+        if (!utils.isValidHex(challenge)) {
+            throw new Error('Invalid hex challenge');
         }
 
         const challengeBase64 = utils.hextoBase64(challenge);
