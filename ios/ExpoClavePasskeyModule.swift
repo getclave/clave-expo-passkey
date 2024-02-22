@@ -11,7 +11,6 @@ public class ExpoClavePasskeyModule: Module {
                                       challenge: String,
                                       displayName: String,
                                       userId: String,
-                                      excludedCredentials: [String],
                                       securityKey: Bool,
                                       promise: Promise ) in
 
@@ -44,15 +43,6 @@ public class ExpoClavePasskeyModule: Module {
                         relyingPartyIdentifier: identifier)
                     let authRequest = platformProvider.createCredentialRegistrationRequest(
                         challenge: challengeData, name: displayName, userID: userIdData)
-
-                    // Try to parse excluded credentials and add it to the auth request
-                    do {
-                        let credentialDescriptors = try parseCredentials(excludedCredentials)
-                        authRequest.excludedCredentials = credentialDescriptors
-                    } catch let error as PassKeyError {
-                        promise.reject(error.rawValue, error.rawValue)
-                        return
-                    }
                     authController = ASAuthorizationController(authorizationRequests: [authRequest])
                 }
 

@@ -25,7 +25,7 @@ export class Passkey {
         challenge: string,
         options: Partial<CreateOptions>,
     ): PasskeyRegistrationRequest {
-        return {
+        const request: PasskeyRegistrationRequest = {
             challenge,
             rp: {
                 id: 'getclave.io',
@@ -39,18 +39,13 @@ export class Passkey {
             pubKeyCredParams: [
                 { alg: -7, type: 'public-key' }, // ES256 (Webauthn's default algorithm)
             ],
-            timeout: options.timeout ?? 60000,
             authenticatorSelection: {
-                userVerification: options.userVerification ?? 'preferred',
-                authenticatorAttachment: 'platform',
-                residentKey: options.discoverable ?? 'preferred',
-                requireResidentKey: options.discoverable === 'required',
+                requireResidentKey: true,
+                residentKey: 'required',
             },
-            excludeCredentials: options.excludeCredentials?.map(
-                credentialIdToDescriptor,
-            ),
-            attestation: options.attestation ? 'direct' : 'none',
         };
+
+        return request;
     }
 
     static generateSignRequest(
@@ -62,8 +57,6 @@ export class Passkey {
             challenge,
             rpId: 'getclave.io',
             allowCredentials: credentialIds.map(credentialIdToDescriptor),
-            userVerification: options.userVerification ?? 'required',
-            timeout: options.timeout ?? 60000,
         };
     }
 
@@ -102,6 +95,9 @@ export class Passkey {
         );
 
         if (Platform.OS === 'android') {
+            // Android requires base64url encoding for user id and challenge
+            request.user.id = utils.base64ToBase64Url(request.user.id);
+            request.challenge = utils.base64ToBase64Url(request.challenge);
             return NativeAndroid.register(request);
         } else if (Platform.OS === 'ios') {
             return NativeiOS.register(
@@ -146,6 +142,8 @@ export class Passkey {
         let authResponse: PasskeyAuthenticationResult;
 
         if (Platform.OS === 'android') {
+            // Android requires base64url encoding for challenge
+            request.challenge = utils.base64ToBase64Url(request.challenge);
             authResponse = await NativeAndroid.authenticate(request);
         } else if (Platform.OS === 'ios') {
             authResponse = await NativeiOS.authenticate(
@@ -195,6 +193,15 @@ export class Passkey {
         );
 
         if (Platform.OS === 'android') {
+            if (request.allowCredentials?.length === 0) {
+                // Add a mock credential to prevent an error
+                request.allowCredentials = [
+                    credentialIdToDescriptor(
+                        'MHhiZDE0MDdlNjgwZTc1ZjAwMzNmMTFiMjU0OGNjMmNlNTM2NzUzNzNi',
+                    ),
+                ];
+            }
+
             return NativeAndroid.authenticate(request);
         } else if (Platform.OS === 'ios') {
             return NativeiOS.authenticate(

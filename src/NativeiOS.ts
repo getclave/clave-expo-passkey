@@ -21,7 +21,7 @@ export class NativeiOS {
         withSecurityKey = false,
     ): Promise<PasskeyRegistrationResult> {
         // Extract the required data from the attestation request
-        const { rpId, challenge, name, userID, excludedCredentials } =
+        const { rpId, challenge, name, userID } =
             this.prepareRegistrationRequest(request);
 
         try {
@@ -30,7 +30,6 @@ export class NativeiOS {
                 challenge,
                 name,
                 userID,
-                excludedCredentials,
                 withSecurityKey,
             );
             return this.handleNativeRegistrationResult(response);
@@ -50,9 +49,6 @@ export class NativeiOS {
             challenge: request.challenge,
             name: request.user.displayName,
             userID: request.user.id,
-            excludedCredentials: request.excludeCredentials?.map(
-                (credential) => credential.id,
-            ) ?? [],
         };
     }
 
@@ -91,7 +87,8 @@ export class NativeiOS {
             const response = await ExpoClavePasskey.authenticate(
                 request.rpId,
                 request.challenge,
-                request.allowCredentials?.map((credential) => credential.id),
+                request.allowCredentials?.map((credential) => credential.id) ??
+                    [],
                 withSecurityKey,
             );
             return this.handleNativeAuthenticationResult(response);
@@ -128,7 +125,6 @@ interface PasskeyiOSRegistrationData {
     challenge: string;
     name: string;
     userID: string;
-    excludedCredentials: string[];
 }
 
 interface PasskeyiOSRegistrationResult {
