@@ -193,15 +193,6 @@ export class Passkey {
         );
 
         if (Platform.OS === 'android') {
-            if (request.allowCredentials?.length === 0) {
-                // Add a mock credential to prevent an error
-                request.allowCredentials = [
-                    credentialIdToDescriptor(
-                        'MHhiZDE0MDdlNjgwZTc1ZjAwMzNmMTFiMjU0OGNjMmNlNTM2NzUzNzNi',
-                    ),
-                ];
-            }
-
             return NativeAndroid.authenticate(request);
         } else if (Platform.OS === 'ios') {
             return NativeiOS.authenticate(
