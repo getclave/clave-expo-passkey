@@ -27,7 +27,7 @@ export class Passkey {
     ): PasskeyRegistrationRequest {
         const request: PasskeyRegistrationRequest = {
             challenge,
-            rp: {
+            rp: options.rp ?? {
                 id: 'getclave.io',
                 name: 'Clave',
             },

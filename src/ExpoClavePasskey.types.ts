@@ -88,6 +88,10 @@ export interface CommonOptions {
 }
 
 export interface CreateOptions extends CommonOptions {
+    rp: {
+        id: string;
+        name: string
+    },
     displayName: string;
     attestation: boolean;
     discoverable: string;
