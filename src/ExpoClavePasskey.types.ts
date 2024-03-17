@@ -30,7 +30,7 @@ export interface PasskeyRegistrationRequest {
     pubKeyCredParams: Array<{ type: string; alg: number }>;
     timeout?: number;
     authenticatorSelection?: {
-        authenticatorAttachment?: string;
+        authenticatorAttachment?: AuthenticatorAttachment;
         requireResidentKey?: boolean;
         residentKey?: string;
         userVerification?: string;
@@ -80,9 +80,25 @@ export interface PasskeyAuthenticationResult {
     };
 }
 
+export type AuthenticatorAttachment = 'platform' | 'cross-platform';
+
+export type AuthenticatorTransport =
+    | 'usb'
+    | 'ble'
+    | 'nfc'
+    | 'internal'
+    | 'hybrid';
+
+export type AuthenticatorType =
+    | 'auto'
+    | 'local'
+    | 'extern'
+    | 'roaming'
+    | 'both';
+
 export interface CommonOptions {
     userVerification: string;
-    authenticatorType: 'auto' | 'local' | 'extern' | 'roaming' | 'both';
+    authenticatorType: AuthenticatorType;
     timeout: number;
     debug: boolean;
 }

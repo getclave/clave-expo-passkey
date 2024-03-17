@@ -1,22 +1,21 @@
 import { Platform } from 'react-native';
 import { NotSupportedError } from './ExpoClavePasskey.errors';
 import {
+    AuthenticatorAttachment,
+    AuthenticatorTransport,
+    AuthenticatorType,
+    CommonOptions,
     CreateOptions,
     PasskeyAuthenticationRequest,
     PasskeyAuthenticationResult,
     PasskeyRegistrationRequest,
     PasskeyRegistrationResult,
+    PublicKeyCredentialDescriptor,
     SignOptions,
 } from './ExpoClavePasskey.types';
 import { NativeAndroid } from './NativeAndroid';
 import { NativeiOS } from './NativeiOS';
 import * as utils from './utils';
-
-const credentialIdToDescriptor = (credentialId: string) => ({
-    id: credentialId,
-    type: 'public-key',
-    transports: ['usb', 'ble', 'nfc', 'internal'],
-});
 
 export class Passkey {
     static generateCreateRequest(
@@ -42,6 +41,9 @@ export class Passkey {
             authenticatorSelection: {
                 requireResidentKey: true,
                 residentKey: 'required',
+                authenticatorAttachment: this.getAuthAttachment(
+                    options.authenticatorType,
+                ),
             },
         };
 
@@ -56,7 +58,9 @@ export class Passkey {
         return {
             challenge,
             rpId: options.rpId ?? 'getclave.io',
-            allowCredentials: credentialIds.map(credentialIdToDescriptor),
+            allowCredentials: credentialIds.map((credentialId) =>
+                this.credentialIdToDescriptor(credentialId, options),
+            ),
         };
     }
 
@@ -226,6 +230,49 @@ export class Passkey {
 
         return false;
     }
+
+    static getAuthAttachment(
+        authType?: CommonOptions['authenticatorType'],
+    ): AuthenticatorAttachment | undefined {
+        if (authType === 'local') return 'platform';
+        if (authType === 'roaming' || authType === 'extern')
+            return 'cross-platform';
+        if (authType === 'both') return undefined; // The webauthn protocol considers `null` as invalid but `undefined` as "both"!
+
+        // the default case: "platform"
+        return 'platform';
+    }
+
+    static getTransports(
+        authType?: AuthenticatorType,
+    ): AuthenticatorTransport[] {
+        const local: AuthenticatorTransport[] = ['internal'];
+
+        // 'hybrid' was added mid-2022 in the specs and currently not yet available in the official dom types
+        // @ts-ignore
+        const roaming: AuthenticatorTransport[] = [
+            'hybrid',
+            'usb',
+            'ble',
+            'nfc',
+        ];
+
+        if (authType === 'local') return local;
+        if (authType == 'roaming' || authType === 'extern') return roaming;
+        if (authType === 'both') return [...local, ...roaming];
+
+        // the default case: "platform" (local)
+        return local;
+    }
+
+    static credentialIdToDescriptor = (
+        credentialId: string,
+        options: Partial<SignOptions> = {},
+    ): PublicKeyCredentialDescriptor => ({
+        id: credentialId,
+        type: 'public-key',
+        transports: this.getTransports(options.authenticatorType),
+    });
 }
 
 export * from './ExpoClavePasskey.types';
