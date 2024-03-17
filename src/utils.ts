@@ -33,7 +33,7 @@ export const hextoBase64 = (hex: string) => {
 
 export const base64ToBase64Url = (text: string) => {
     return text.replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
-}
+};
 
 /**
  * Converts DER signature to R and S
