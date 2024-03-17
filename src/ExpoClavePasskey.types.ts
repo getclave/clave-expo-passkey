@@ -90,8 +90,8 @@ export interface CommonOptions {
 export interface CreateOptions extends CommonOptions {
     rp: {
         id: string;
-        name: string
-    },
+        name: string;
+    };
     displayName: string;
     attestation: boolean;
     discoverable: string;
@@ -99,6 +99,9 @@ export interface CreateOptions extends CommonOptions {
 }
 
 export interface SignOptions extends CommonOptions {
+    rpId: string;
     mediation: 'optional' | 'conditional' | 'required' | 'silent';
     withSecurityKey: boolean;
+    /** Don't convert credentials id's to base64url */
+    preserveCredentials: boolean;
 }

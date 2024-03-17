@@ -38,17 +38,18 @@ export class NativeAndroid {
      */
     public static async authenticate(
         request: PasskeyAuthenticationRequest,
+        preserveCredentials: boolean,
     ): Promise<PasskeyAuthenticationResult> {
-        // if (request.allowCredentials != undefined) {
-        //     request.allowCredentials = request.allowCredentials.map(
-        //         (credential) => {
-        //             return {
-        //                 ...credential,
-        //                 id: utils.base64ToBase64Url(credential.id),
-        //             };
-        //         },
-        //     );
-        // }
+        if (!preserveCredentials && request.allowCredentials != undefined) {
+            request.allowCredentials = request.allowCredentials.map(
+                (credential) => {
+                    return {
+                        ...credential,
+                        id: utils.base64ToBase64Url(credential.id),
+                    };
+                },
+            );
+        }
 
         const nativeRequest = this.prepareRequest(request);
 

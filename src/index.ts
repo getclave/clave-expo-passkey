@@ -55,7 +55,7 @@ export class Passkey {
     ): PasskeyAuthenticationRequest {
         return {
             challenge,
-            rpId: 'getclave.io',
+            rpId: options.rpId ?? 'getclave.io',
             allowCredentials: credentialIds.map(credentialIdToDescriptor),
         };
     }
@@ -144,7 +144,10 @@ export class Passkey {
         if (Platform.OS === 'android') {
             // Android requires base64url encoding for challenge
             request.challenge = utils.base64ToBase64Url(request.challenge);
-            authResponse = await NativeAndroid.authenticate(request);
+            authResponse = await NativeAndroid.authenticate(
+                request,
+                options.preserveCredentials ?? false,
+            );
         } else if (Platform.OS === 'ios') {
             authResponse = await NativeiOS.authenticate(
                 request,
@@ -193,7 +196,10 @@ export class Passkey {
         );
 
         if (Platform.OS === 'android') {
-            return NativeAndroid.authenticate(request);
+            return NativeAndroid.authenticate(
+                request,
+                options.preserveCredentials ?? false,
+            );
         } else if (Platform.OS === 'ios') {
             return NativeiOS.authenticate(
                 request,
