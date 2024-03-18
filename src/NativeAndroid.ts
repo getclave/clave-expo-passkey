@@ -38,9 +38,9 @@ export class NativeAndroid {
      */
     public static async authenticate(
         request: PasskeyAuthenticationRequest,
-        preserveCredentials: boolean,
     ): Promise<PasskeyAuthenticationResult> {
-        if (!preserveCredentials && request.allowCredentials != undefined) {
+        // Convert the credentials to Base64URL
+        if (request.allowCredentials != undefined) {
             request.allowCredentials = request.allowCredentials.map(
                 (credential) => {
                     return {
@@ -85,17 +85,6 @@ export class NativeAndroid {
     private static handleNativeResponse(
         response: PasskeyRegistrationResult & PasskeyAuthenticationResult,
     ): PasskeyRegistrationResult & PasskeyAuthenticationResult {
-        // Transform Base64URL Response to Base64
-        let id = response.id;
-        if (id.length % 4 !== 0) {
-            id += '==='.slice(0, 4 - (id.length % 4));
-        }
-        id = id.replace(/-/g, '+').replace(/_/g, '/');
-
-        return {
-            ...response,
-            id,
-            rawId: id,
-        };
+        return { ...response };
     }
 }

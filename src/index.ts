@@ -148,10 +148,7 @@ export class Passkey {
         if (Platform.OS === 'android') {
             // Android requires base64url encoding for challenge
             request.challenge = utils.base64ToBase64Url(request.challenge);
-            authResponse = await NativeAndroid.authenticate(
-                request,
-                options.preserveCredentials ?? false,
-            );
+            authResponse = await NativeAndroid.authenticate(request);
         } else if (Platform.OS === 'ios') {
             authResponse = await NativeiOS.authenticate(
                 request,
@@ -200,10 +197,7 @@ export class Passkey {
         );
 
         if (Platform.OS === 'android') {
-            return NativeAndroid.authenticate(
-                request,
-                options.preserveCredentials ?? false,
-            );
+            return NativeAndroid.authenticate(request);
         } else if (Platform.OS === 'ios') {
             return NativeiOS.authenticate(
                 request,
