@@ -24,7 +24,7 @@ export class NativeAndroid {
             const response = await ExpoClavePasskey.register(
                 JSON.stringify(nativeRequest),
             );
-            return JSON.parse(response);
+            return this.handleNativeResponse(JSON.parse(response));
         } catch (error) {
             throw handleNativeError(error);
         }
@@ -45,7 +45,7 @@ export class NativeAndroid {
             const response = await ExpoClavePasskey.authenticate(
                 JSON.stringify(nativeRequest),
             );
-            return JSON.parse(response);
+            return this.handleNativeResponse(JSON.parse(response));
         } catch (error) {
             throw handleNativeError(error);
         }
@@ -85,5 +85,17 @@ export class NativeAndroid {
         request.user.id = utils.base64ToBase64Url(request.user.id);
         request.challenge = utils.base64ToBase64Url(request.challenge);
         return request;
+    }
+
+    private static handleNativeResponse(
+        response: PasskeyRegistrationResult & PasskeyAuthenticationResult,
+    ): PasskeyRegistrationResult & PasskeyAuthenticationResult {
+        const id = response.id;
+
+        return {
+            ...response,
+            id,
+            rawId: id,
+        };
     }
 }
