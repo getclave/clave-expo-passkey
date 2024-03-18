@@ -45,7 +45,7 @@ export class NativeAndroid {
             const response = await ExpoClavePasskey.authenticate(
                 JSON.stringify(nativeRequest),
             );
-            return this.handleNativeResponse(JSON.parse(response));
+            return JSON.parse(response);
         } catch (error) {
             throw handleNativeError(error);
         }
