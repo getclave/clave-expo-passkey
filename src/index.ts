@@ -44,6 +44,7 @@ export class Passkey {
                 authenticatorAttachment: this.getAuthAttachment(
                     options.authenticatorType,
                 ),
+                userVerification: options.userVerification ?? 'required',
             },
         };
 
@@ -99,9 +100,6 @@ export class Passkey {
         );
 
         if (Platform.OS === 'android') {
-            // Android requires base64url encoding for user id and challenge
-            request.user.id = utils.base64ToBase64Url(request.user.id);
-            request.challenge = utils.base64ToBase64Url(request.challenge);
             return NativeAndroid.register(request);
         } else if (Platform.OS === 'ios') {
             return NativeiOS.register(
@@ -146,8 +144,6 @@ export class Passkey {
         let authResponse: PasskeyAuthenticationResult;
 
         if (Platform.OS === 'android') {
-            // Android requires base64url encoding for challenge
-            request.challenge = utils.base64ToBase64Url(request.challenge);
             authResponse = await NativeAndroid.authenticate(request);
         } else if (Platform.OS === 'ios') {
             authResponse = await NativeiOS.authenticate(

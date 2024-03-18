@@ -18,13 +18,13 @@ export class NativeAndroid {
     public static async register(
         request: PasskeyRegistrationRequest,
     ): Promise<PasskeyRegistrationResult> {
-        const nativeRequest = this.prepareRequest(request);
+        const nativeRequest = this.prepareRegistrationRequest(request);
 
         try {
             const response = await ExpoClavePasskey.register(
                 JSON.stringify(nativeRequest),
             );
-            return this.handleNativeResponse(JSON.parse(response));
+            return JSON.parse(response);
         } catch (error) {
             throw handleNativeError(error);
         }
@@ -39,19 +39,7 @@ export class NativeAndroid {
     public static async authenticate(
         request: PasskeyAuthenticationRequest,
     ): Promise<PasskeyAuthenticationResult> {
-        // Convert the credentials to Base64URL
-        if (request.allowCredentials != undefined) {
-            request.allowCredentials = request.allowCredentials.map(
-                (credential) => {
-                    return {
-                        ...credential,
-                        id: utils.base64ToBase64Url(credential.id),
-                    };
-                },
-            );
-        }
-
-        const nativeRequest = this.prepareRequest(request);
+        const nativeRequest = this.prepareAuthRequest(request);
 
         try {
             const response = await ExpoClavePasskey.authenticate(
@@ -64,27 +52,38 @@ export class NativeAndroid {
     }
 
     /**
-     * Prepares the attestation or assertion request for Android
+     * Prepares the assertion request for Android
      */
-    public static prepareRequest(request: { challenge: string }): object {
-        // Transform challenge from Base64 to Base64URL
-        const encodedChallenge = request.challenge
-            .replace(/\+/g, '-')
-            .replace(/\//g, '_')
-            .replace(/\=+$/, '');
+    public static prepareAuthRequest(
+        _request: PasskeyAuthenticationRequest,
+    ): object {
+        const request = { ..._request };
+        // Convert the credentials to Base64URL
+        if (request.allowCredentials != undefined) {
+            request.allowCredentials = request.allowCredentials.map(
+                (credential) => {
+                    return {
+                        ...credential,
+                        id: utils.base64ToBase64Url(credential.id),
+                    };
+                },
+            );
+        }
+        request.challenge = utils.base64ToBase64Url(request.challenge);
 
-        return {
-            ...request,
-            challenge: encodedChallenge,
-        };
+        return request;
     }
 
     /**
-     * Transform the attestation or assertion result
+     * Prepares the assertion request for Android
      */
-    private static handleNativeResponse(
-        response: PasskeyRegistrationResult & PasskeyAuthenticationResult,
-    ): PasskeyRegistrationResult & PasskeyAuthenticationResult {
-        return { ...response };
+    public static prepareRegistrationRequest(
+        _request: PasskeyRegistrationRequest,
+    ): object {
+        // Android requires base64url encoding for user id and challenge
+        const request = { ..._request };
+        request.user.id = utils.base64ToBase64Url(request.user.id);
+        request.challenge = utils.base64ToBase64Url(request.challenge);
+        return request;
     }
 }
