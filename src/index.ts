@@ -44,7 +44,6 @@ export class Passkey {
                 authenticatorAttachment: this.getAuthAttachment(
                     options.authenticatorType,
                 ),
-                userVerification: options.userVerification ?? 'required',
             },
         };
 
