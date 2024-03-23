@@ -6,245 +6,149 @@ public class ExpoClavePasskeyModule: Module {
 
     public func definition() -> ModuleDefinition {
         Name("ExpoClavePasskey")
-
-        AsyncFunction("register") { ( identifier: String,
-                                      challenge: String,
+        
+        /// Register a Passkey
+        /// # Parameters
+        /// - `challenge`: Challenge to verify passkey (encoded in Base64URL)
+        /// - `displayName`: Display Name of Passkey
+        /// - `rpId`: Relaying Party ID
+        /// - `userId`: User ID (encoded in Base64URL)
+        /// - `promise`: Javascript Promise
+        AsyncFunction("register") { ( challenge: String,
                                       displayName: String,
+                                      rpId: String,
                                       userId: String,
-                                      securityKey: Bool,
                                       promise: Promise ) in
-
-            // Convert challenge and userId to correct type
-            guard let challengeData = Data(base64Encoded: challenge) else {
-                promise.reject( PassKeyError.invalidChallenge.rawValue,
-                                PassKeyError.invalidChallenge.rawValue )
+            
+            guard let challenge = Data.fromBase64Url(challenge) else {
+                promise.rejectWith(passkeyError: PasskeyError.InvalidChallenge)
                 return
             }
-            let userIdData: Data = RCTConvert.nsData(userId)
-
-            // Check if Passkeys are supported on this OS version
+            guard let userId = Data.fromBase64Url(userId) else {
+                promise.rejectWith(passkeyError: PasskeyError.InvalidUserId)
+                return
+            }
+            
+            // Passkey support came with iOS 16
             if #available(iOS 15.0, *) {
-                let authController: ASAuthorizationController
-
-                // Check if registration should proceed with a security key
-                if securityKey {
-                    // Create a new registration request with security key
-                    let securityKeyProvider = ASAuthorizationSecurityKeyPublicKeyCredentialProvider(
-                        relyingPartyIdentifier: identifier)
-                    let authRequest = securityKeyProvider.createCredentialRegistrationRequest(
-                        challenge: challengeData, displayName: displayName, name: displayName, userID: userIdData)
-                    authRequest.credentialParameters = [
-                        ASAuthorizationPublicKeyCredentialParameters(algorithm: ASCOSEAlgorithmIdentifier.ES256),
-                    ]
-                    authController = ASAuthorizationController(authorizationRequests: [authRequest])
-                } else {
-                    // Create a new registration request without security key
-                    let platformProvider = ASAuthorizationPlatformPublicKeyCredentialProvider(
-                        relyingPartyIdentifier: identifier)
-                    let authRequest = platformProvider.createCredentialRegistrationRequest(
-                        challenge: challengeData, name: displayName, userID: userIdData)
-                    authController = ASAuthorizationController(authorizationRequests: [authRequest])
-                }
-
-                // Set up a PasskeyDelegate instance with a callback function
-                self.passKeyDelegate = PasskeyDelegate { error, result in
-                    // Check if authorization process returned an error and throw if thats the case
-                    if error != nil {
-                        let passkeyError = self.handleErrorCode(error: error!)
-                        promise.reject(passkeyError.rawValue, passkeyError.rawValue)
-                        return
+                let platformProvider = ASAuthorizationPlatformPublicKeyCredentialProvider(relyingPartyIdentifier: rpId)
+                let authRequest = platformProvider.createCredentialRegistrationRequest(challenge: challenge, name: displayName, userID: userId)
+                let authController = ASAuthorizationController(authorizationRequests: [authRequest])
+                let passkeyDelegate = PasskeyDelegate2();
+                
+                // Perform authorization, check for the error and parse the result
+                passkeyDelegate.performAuth(for: authController, completion: { error, result in
+                    if (error != nil) {
+                        promise.rejectWith(passkeyError: self.convertNativeError(error: error!))
                     }
-
+                    
                     // Check if the result object contains a valid registration result
                     if let registrationResult = result?.registrationResult {
                         // Return a NSDictionary instance with the received authorization data
-                        let authResponse: NSDictionary = [
-                            "rawAttestationObject": registrationResult.rawAttestationObject.base64EncodedString(),
-                            "rawClientDataJSON": registrationResult.rawClientDataJSON.base64EncodedString(),
-                        ]
-
                         let authResult: NSDictionary = [
-                            "credentialID": registrationResult.credentialID.base64EncodedString(),
-                            "response": authResponse,
+                            "credentialID": registrationResult.credentialID.toBase64Url(),
+                            "response": [
+                                "rawAttestationObject": registrationResult.rawAttestationObject.toBase64Url(),
+                                "rawClientDataJSON": registrationResult.rawClientDataJSON.toBase64Url(),
+                            ]
                         ]
                         promise.resolve(authResult)
                     } else {
                         // If result didn't contain a valid registration result throw an error
-                        promise.reject( PassKeyError.requestFailed.rawValue,
-                                        PassKeyError.requestFailed.rawValue )
+                        promise.rejectWith(passkeyError: PasskeyError.RequestFailed)
                     }
-                }
-
-                if let passKeyDelegate = self.passKeyDelegate {
-                    // Perform the authorization request
-                    passKeyDelegate.performAuthForController(controller: authController)
-                }
+                })
             } else {
-                // If Passkeys are not supported throw an error
-                promise.reject( PassKeyError.notSupported.rawValue,
-                                PassKeyError.notSupported.rawValue )
-            }
-        }
-
-        AsyncFunction("authenticate") { ( identifier: String,
-                                          challenge: String,
-                                          allowedCredentials: [String],
-                                          securityKey: Bool,
-                                          promise: Promise ) in
-            // Convert challenge to correct type
-            guard let challengeData = Data(base64Encoded: challenge) else {
-                promise.reject( PassKeyError.invalidChallenge.rawValue,
-                                PassKeyError.invalidChallenge.rawValue )
+                promise.rejectWith(passkeyError: PasskeyError.NotSupported)
                 return
             }
-
-            // Check if Passkeys are supported on this OS version
+        }
+        
+        /// Authenticates a passkey
+        /// # Parameters
+        /// - `challenge`: Challenge to verify passkey (encoded in Base64URL)
+        /// - `allowedCredentials`: Allowed credential IDs (encoded in Base64URL)
+        /// - `rpId`: Relaying Party ID
+        /// - `promise`: Javascript Promise
+        AsyncFunction("authenticate") { (challenge: String,
+                                         allowedCredentials: [String],
+                                         rpId: String,
+                                         promise: Promise) in
+            guard let challenge = Data.fromBase64Url(challenge) else {
+                promise.rejectWith(passkeyError: PasskeyError.InvalidChallenge)
+                return
+            }
+            
             if #available(iOS 15.0, *) {
-                let authController: ASAuthorizationController
+                let platformProvider = ASAuthorizationPlatformPublicKeyCredentialProvider(relyingPartyIdentifier: rpId)
+                let authRequest = platformProvider.createCredentialAssertionRequest(challenge: challenge)
 
-                // Check if authentication should proceed with a security key
-                if securityKey {
-                    // Create a new assertion request with security key
-                    let securityKeyProvider = ASAuthorizationSecurityKeyPublicKeyCredentialProvider(
-                        relyingPartyIdentifier: identifier)
-                    let authRequest = securityKeyProvider.createCredentialAssertionRequest(
-                        challenge: challengeData)
-                    authController = ASAuthorizationController(authorizationRequests: [authRequest])
-                } else {
-                    // Create a new assertion request without security key
-                    let platformProvider = ASAuthorizationPlatformPublicKeyCredentialProvider(
-                        relyingPartyIdentifier: identifier)
-                    let authRequest = platformProvider.createCredentialAssertionRequest(
-                        challenge: challengeData)
-
-                    // Try to parse included credentials and add it to the auth request
-                    do {
-                        let credentialDescriptors = try parseCredentials(allowedCredentials)
-                        authRequest.allowedCredentials = credentialDescriptors
-                    } catch let error as PassKeyError {
-                        promise.reject(error.rawValue, error.rawValue)
-                        return
-                    }
-                    authController = ASAuthorizationController(authorizationRequests: [authRequest])
+                // Try to parse included credentials and add it to the auth request
+                do {
+                    let credentialDescriptors = try parseCredentials(allowedCredentials)
+                    authRequest.allowedCredentials = credentialDescriptors
+                } catch let error as PasskeyError {
+                    promise.rejectWith(passkeyError: error)
+                    return
                 }
-
-                // Set up a PasskeyDelegate instance with a callback function
-                self.passKeyDelegate = PasskeyDelegate { error, result in
-                    // Check if authorization process returned an error and throw if thats the case
-                    if error != nil {
-                        let passkeyError = self.handleErrorCode(error: error!)
-                        promise.reject(passkeyError.rawValue, passkeyError.rawValue)
-                        return
+                let authController = ASAuthorizationController(authorizationRequests: [authRequest])
+                let passkeyDelegate = PasskeyDelegate2();
+                passkeyDelegate.performAuth(for: authController, completion: { error, result in
+                    if (error != nil) {
+                        promise.rejectWith(passkeyError: self.convertNativeError(error: error!))
                     }
+                    
                     // Check if the result object contains a valid authentication result
-                    if let assertionResult = result?.assertionResult {
-                        // Return a NSDictionary instance with the received authorization data
-                        let authResponse: NSDictionary = [
-                            "rawAuthenticatorData": assertionResult.rawAuthenticatorData.base64EncodedString(),
-                            "rawClientDataJSON": assertionResult.rawClientDataJSON.base64EncodedString(),
-                            "signature": assertionResult.signature.base64EncodedString(),
-                        ]
-
+                    if let authenticationResult = result?.authenticationResult {
                         let authResult: NSDictionary = [
-                            "credentialID": assertionResult.credentialID.base64EncodedString(),
-                            "userID": String(decoding: assertionResult.userID, as: UTF8.self),
-                            "response": authResponse,
+                            "credentialID": authenticationResult.credentialID.toBase64Url(),
+                            "userID": String(decoding: authenticationResult.userID, as: UTF8.self),
+                            "response": [
+                                "rawAuthenticatorData": authenticationResult.rawAuthenticatorData.toBase64Url(),
+                                "rawClientDataJSON": authenticationResult.rawClientDataJSON.toBase64Url(),
+                                "signature": authenticationResult.signature.toBase64Url(),
+                            ]
                         ]
                         promise.resolve(authResult)
                     } else {
-                        // If result didn't contain a valid authentication result throw an error
-                        promise.reject( PassKeyError.requestFailed.rawValue,
-                                        PassKeyError.requestFailed.rawValue )
+                        promise.rejectWith(passkeyError: PasskeyError.RequestFailed)
                     }
-                }
-
-                if let passKeyDelegate = self.passKeyDelegate {
-                    // Perform the authorization request
-                    passKeyDelegate.performAuthForController(controller: authController)
-                }
+                })
             } else {
-                // If Passkeys are not supported throw an error
-                promise.reject( PassKeyError.notSupported.rawValue,
-                                PassKeyError.notSupported.rawValue )
+                promise.rejectWith(passkeyError: PasskeyError.NotSupported)
+                return
             }
-
         }
     }
-
-    // Handles ASAuthorization error codes
-    func handleErrorCode(error: Error) -> PassKeyError {
+    
+    /// Converts ASAuthorization error codes to PasskeyError
+    func convertNativeError(error: Error) -> PasskeyError {
         let errorCode = (error as NSError).code
         switch errorCode {
         case 1001:
-            return PassKeyError.cancelled
+            return PasskeyError.Cancelled
         case 1004:
-            return PassKeyError.requestFailed
+            return PasskeyError.RequestFailed
         case 4004:
-            return PassKeyError.notConfigured
+            return PasskeyError.NotConfigured
         default:
-            return PassKeyError.unknown
+            return PasskeyError.UnknownError
         }
     }
 
+    /// Converts Base64URL credentials to Data
     @available(iOS 15, *)
     func parseCredentials(_ credentials: [String]) throws -> [ASAuthorizationPlatformPublicKeyCredentialDescriptor] {
         guard credentials.count > 0 else { return [] }
 
         var formattedCredentials: [Data] = []
         for credential in credentials {
-            guard let data = Data(base64Encoded: credential) else {
-                throw PassKeyError.invalidChallenge
+            guard let data = Data.fromBase64Url(credential) else {
+                throw PasskeyError.InvalidChallenge
             }
             formattedCredentials.append(data)
         }
 
         return formattedCredentials.map { ASAuthorizationPlatformPublicKeyCredentialDescriptor(credentialID: $0) }
     }
-}
-
-//
-// Passkey related types
-//
-
-enum PassKeyError: String, Error {
-    case notSupported = "NotSupported"
-    case requestFailed = "RequestFailed"
-    case cancelled = "UserCancelled"
-    case invalidChallenge = "InvalidChallenge"
-    case notConfigured = "NotConfigured"
-    case unknown = "UnknownError"
-}
-
-struct AuthRegistrationResult {
-    var passkey: PassKeyRegistrationResult
-    var type: PasskeyOperation
-}
-
-struct AuthAssertionResult {
-    var passkey: PassKeyAssertionResult
-    var type: PasskeyOperation
-}
-
-struct PassKeyResult {
-    var registrationResult: PassKeyRegistrationResult?
-    var assertionResult: PassKeyAssertionResult?
-}
-
-struct PassKeyRegistrationResult {
-    var credentialID: Data
-    var rawAttestationObject: Data
-    var rawClientDataJSON: Data
-}
-
-struct PassKeyAssertionResult {
-    var credentialID: Data
-    var rawAuthenticatorData: Data
-    var rawClientDataJSON: Data
-    var signature: Data
-    var userID: Data
-}
-
-enum PasskeyOperation {
-    case Registration
-    case Assertion
 }
