@@ -2,8 +2,6 @@ import ExpoModulesCore
 import AuthenticationServices
 
 public class ExpoClavePasskeyModule: Module {
-    var passKeyDelegate: PasskeyDelegate?
-
     public func definition() -> ModuleDefinition {
         Name("ExpoClavePasskey")
         
@@ -34,7 +32,7 @@ public class ExpoClavePasskeyModule: Module {
                 let platformProvider = ASAuthorizationPlatformPublicKeyCredentialProvider(relyingPartyIdentifier: rpId)
                 let authRequest = platformProvider.createCredentialRegistrationRequest(challenge: challenge, name: displayName, userID: userId)
                 let authController = ASAuthorizationController(authorizationRequests: [authRequest])
-                let passkeyDelegate = PasskeyDelegate2();
+                let passkeyDelegate = PasskeyDelegate();
                 
                 // Perform authorization, check for the error and parse the result
                 passkeyDelegate.performAuth(for: authController, completion: { error, result in
@@ -92,7 +90,7 @@ public class ExpoClavePasskeyModule: Module {
                     return
                 }
                 let authController = ASAuthorizationController(authorizationRequests: [authRequest])
-                let passkeyDelegate = PasskeyDelegate2();
+                let passkeyDelegate = PasskeyDelegate();
                 passkeyDelegate.performAuth(for: authController, completion: { error, result in
                     if (error != nil) {
                         promise.rejectWith(passkeyError: self.convertNativeError(error: error!))
