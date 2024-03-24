@@ -1,3 +1,4 @@
+/** https://w3c.github.io/webauthn/#dictdef-publickeycredentialrpentity */
 export type RelyingParty = {
     /** Relying Party ID, can be any string */
     id: string;
@@ -5,6 +6,7 @@ export type RelyingParty = {
     name: string;
 };
 
+/** https://w3c.github.io/webauthn/#dictdef-publickeycredentialuserentity */
 export type User = {
     /** User ID, encoded as base64url */
     id: string;
@@ -14,17 +16,19 @@ export type User = {
     displayName: string;
 };
 
+/** https://w3c.github.io/webauthn/#dictdef-publickeycredentialparameters */
 export type PublicKeyCredentialParameters = {
     /** @note Credential type is always 'public-key' */
     type: string;
     /**
      * The algorithm used for the credential
-     * - `-7`: P256
+     * - `-7`: ES256 (Webauthn's default algorithm)
      * - `-257`: RS256
      */
     alg: number;
 };
 
+/** https://w3c.github.io/webauthn/#dictdef-publickeycredentialdescriptor */
 export type CredentialDescriptor = {
     /** @note Credential type is always 'public-key' */
     type: string;
@@ -41,6 +45,7 @@ export type CredentialDescriptor = {
 
 /**
  * Specifies requirements regarding authenticator attributes.
+ * https://w3c.github.io/webauthn/#dictionary-authenticatorSelection
  */
 export type AuthenticatorSelectionCriteria = {
     /**
@@ -56,16 +61,17 @@ export type AuthenticatorSelectionCriteria = {
      */
     residentKey: 'discouraged' | 'preferred' | 'required';
     /**
-     * Whether to use resident keys (aka passkeys).
+     * Whether to use resident keys (aka passkeys). Default is false
      */
-    requireResidentKey: boolean;
+    requireResidentKey?: boolean;
     /**
-     * Specifies requirements regarding user verification.
+     * Specifies requirements regarding user verification. Default is "preferred".
      * @note For mobile phone authenticators, this is ignored.
      */
-    userVerification: 'preferred' | 'required' | 'discouraged';
+    userVerification?: 'preferred' | 'required' | 'discouraged';
 };
 
+/** https://w3c.github.io/webauthn/#dictionary-makecredentialoptions */
 export type PasskeyCreateOptions = {
     /** Relying party options */
     rp: RelyingParty;
@@ -91,146 +97,57 @@ export type PasskeyCreateOptions = {
     extensions?: Record<string, unknown>;
 };
 
+/** https://w3c.github.io/webauthn/#dictdef-authenticationresponsejson */
+export type PasskeyCreateResult = {
+    /** Credential ID, base64url encoded */
+    id: string;
+    /** Credential ID, same as `id` */
+    rawId: string;
+    type: 'webauthn.create';
+    response: {
+        /** Client data JSON, base64url encoded */
+        clientDataJSON: string;
+        /** Attestation object, base64url encoded */
+        attestationObject: string;
+    };
+};
+
+/** https://w3c.github.io/webauthn/#dictionary-assertion-options */
 export type PasskeyAuthenticationOptions = {
     /** Challenge, base64url encoded */
     challenge: string;
     /** Timeout for the operation, in milliseconds */
     timeout?: number;
     /** Relying party ID */
-    rpId: RelyingParty['id'];
+    rpId?: RelyingParty['id'];
     /** Allowed credentials for the operation */
     allowCredentials?: Array<CredentialDescriptor>;
     /**
-     * Specifies requirements regarding user verification.
+     * Specifies requirements regarding user verification. Default is "preferred".
      * @note For mobile phone authenticators, this is ignored.
      */
-    userVerification: 'preferred' | 'required' | 'discouraged';
+    userVerification?: 'preferred' | 'required' | 'discouraged';
     /** Hints sent to authenticator, can be ignored */
     hints?: Array<string>;
     /** Extensions sent to authenticator, can be ignored */
     extensions?: Record<string, unknown>;
 };
 
-/**
- * The available options for Passkey operations
- */
-export interface PasskeyOptions {
-    withSecurityKey: boolean; // iOS only
-}
-
-// https://www.w3.org/TR/webauthn-2/#dictionary-credential-descriptor
-export interface PublicKeyCredentialDescriptor {
-    type: string;
+/** https://w3c.github.io/webauthn/#dictdef-authenticatorassertionresponsejson */
+export type PasskeyAuthenticationResult = {
+    /** Credential ID, base64url encoded */
     id: string;
-    transports?: Array<string>;
-}
-
-/**
- * The FIDO2 Attestation Request
- * https://www.w3.org/TR/webauthn-2/#dictionary-makecredentialoptions
- */
-export interface PasskeyRegistrationRequest {
-    challenge: string;
-    rp: {
-        id: string;
-        name: string;
-    };
-    user: {
-        id: string;
-        name: string;
-        displayName: string;
-    };
-    pubKeyCredParams: Array<{ type: string; alg: number }>;
-    timeout?: number;
-    authenticatorSelection?: {
-        authenticatorAttachment?: AuthenticatorAttachment;
-        requireResidentKey?: boolean;
-        residentKey?: string;
-        userVerification?: string;
-    };
-    attestation?: string;
-    extensions?: Record<string, unknown>;
-}
-
-/**
- * The FIDO2 Attestation Result
- */
-export interface PasskeyRegistrationResult {
-    id: string;
+    /** Credential ID, same as `id` */
     rawId: string;
-    type?: string;
+    type: 'webauthn.get';
     response: {
-        clientDataJSON: string;
-        attestationObject: string;
-    };
-}
-
-/**
- * The FIDO2 Assertion Request
- * https://www.w3.org/TR/webauthn-2/#dictionary-assertion-options
- */
-export interface PasskeyAuthenticationRequest {
-    challenge: string;
-    rpId: string;
-    timeout?: number;
-    allowCredentials?: Array<PublicKeyCredentialDescriptor>;
-    userVerification?: string;
-    extensions?: Record<string, unknown>;
-}
-
-/**
- * The FIDO2 Assertion Result
- */
-export interface PasskeyAuthenticationResult {
-    id: string;
-    rawId: string;
-    type?: string;
-    response: {
+        /** Authenticator data, base64url encoded */
         authenticatorData: string;
+        /** Client data JSON, base64url encoded */
         clientDataJSON: string;
+        /** Signature, base64url encoded */
         signature: string;
-        userHandle: string;
+        /** User handle, base64url encoded */
+        userHandle?: string;
     };
-}
-
-export type AuthenticatorAttachment = 'platform' | 'cross-platform';
-
-export type AuthenticatorTransport =
-    | 'usb'
-    | 'ble'
-    | 'nfc'
-    | 'internal'
-    | 'hybrid';
-
-export type AuthenticatorType =
-    | 'auto'
-    | 'local'
-    | 'extern'
-    | 'roaming'
-    | 'both';
-
-export interface CommonOptions {
-    userVerification: string;
-    authenticatorType: AuthenticatorType;
-    timeout: number;
-    debug: boolean;
-}
-
-export interface CreateOptions extends CommonOptions {
-    rp: {
-        id: string;
-        name: string;
-    };
-    displayName: string;
-    attestation: boolean;
-    discoverable: string;
-    withSecurityKey: boolean;
-}
-
-export interface SignOptions extends CommonOptions {
-    rpId: string;
-    mediation: 'optional' | 'conditional' | 'required' | 'silent';
-    withSecurityKey: boolean;
-    /** Don't convert credentials id's to base64url */
-    preserveCredentials: boolean;
-}
+};
