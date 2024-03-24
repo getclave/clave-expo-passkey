@@ -13,9 +13,9 @@ public class ExpoClavePasskeyModule: Module {
         /// - `userId`: User ID (encoded in Base64URL)
         /// - `promise`: Javascript Promise
         AsyncFunction("register") { ( challenge: String,
-                                      displayName: String,
                                       rpId: String,
                                       userId: String,
+                                      displayName: String,
                                       promise: Promise ) in
             
             guard let challenge = Data.fromBase64Url(challenge) else {
@@ -69,8 +69,8 @@ public class ExpoClavePasskeyModule: Module {
         /// - `rpId`: Relaying Party ID
         /// - `promise`: Javascript Promise
         AsyncFunction("authenticate") { (challenge: String,
-                                         allowedCredentials: [String],
                                          rpId: String,
+                                         allowedCredentials: [String],
                                          promise: Promise) in
             guard let challenge = Data.fromBase64Url(challenge) else {
                 promise.rejectWith(passkeyError: PasskeyError.InvalidChallenge)
