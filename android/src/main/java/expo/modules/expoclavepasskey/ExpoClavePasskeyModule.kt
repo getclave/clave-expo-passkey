@@ -16,15 +16,12 @@ import androidx.credentials.CreatePublicKeyCredentialRequest
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.GetPublicKeyCredentialOption
 import androidx.credentials.exceptions.*
-import androidx.credentials.exceptions.publickeycredential.CreatePublicKeyCredentialDomException
-import androidx.credentials.exceptions.publickeycredential.GetPublicKeyCredentialDomException
 import expo.modules.core.errors.ModuleDestroyedException
 
 const val REGISTRATION_RESPONSE = "androidx.credentials.BUNDLE_KEY_REGISTRATION_RESPONSE_JSON"
 const val AUTH_RESPONSE = "androidx.credentials.BUNDLE_KEY_AUTHENTICATION_RESPONSE_JSON"
 
 class ExpoClavePasskeyModule(context: Context) : ExportedModule(context) {
-
   private val moduleCoroutineScope = CoroutineScope(Dispatchers.Default)
   private lateinit var moduleRegistry: ModuleRegistry
 
@@ -39,29 +36,38 @@ class ExpoClavePasskeyModule(context: Context) : ExportedModule(context) {
   override fun getName() = "ExpoClavePasskey"
 
   private fun getCurrentActivity(): Activity? {
-    val activityProvider: ActivityProvider = moduleRegistry.getModule(ActivityProvider::class.java)
-    return activityProvider.currentActivity
+    return moduleRegistry.getModule(ActivityProvider::class.java).currentActivity
   }
 
   @ExpoMethod
   fun register(requestJSON: String, promise: Promise) {
+    // Android API works with JSON strings for Webauthn interaction
+    // requestJSON must be validated on the Javascript library level
     val credentialManager = CredentialManager.create(context)
     val createPublicKeyCredentialRequest = CreatePublicKeyCredentialRequest(requestJSON)
     val currentActivity = getCurrentActivity()
 
     moduleCoroutineScope.launch {
       try {
-        val result = currentActivity?.let { credentialManager.createCredential(it, createPublicKeyCredentialRequest) }
+        val result = currentActivity?.let {
+          credentialManager.createCredential(
+            it,
+            createPublicKeyCredentialRequest
+          )
+        }
         val response = result?.data?.getString(REGISTRATION_RESPONSE)
         promise.resolve(response)
       } catch (e: CreateCredentialException) {
-        promise.reject("Passkey", handleRegistrationException(e))
+        val claveError = convertRegistrationException(e)
+        promise.reject(claveError.code, claveError.message)
       }
     }
   }
 
   @ExpoMethod
   fun authenticate(requestJSON: String, promise: Promise) {
+    // Android API works with JSON strings for Webauthn interaction
+    // requestJSON must be validated on the Javascript library level
     val credentialManager = CredentialManager.create(context)
     val getCredentialRequest =
       GetCredentialRequest(listOf(GetPublicKeyCredentialOption(requestJSON)))
@@ -69,66 +75,13 @@ class ExpoClavePasskeyModule(context: Context) : ExportedModule(context) {
 
     moduleCoroutineScope.launch {
       try {
-        val result = currentActivity?.let { credentialManager.getCredential(it, getCredentialRequest) }
+        val result =
+          currentActivity?.let { credentialManager.getCredential(it, getCredentialRequest) }
         val response = result?.credential?.data?.getString(AUTH_RESPONSE)
         promise.resolve(response)
       } catch (e: GetCredentialException) {
-        promise.reject("Passkey", handleAuthenticationException(e))
-      }
-    }
-  }
-
-  private fun handleRegistrationException(e: CreateCredentialException): String {
-    when (e) {
-      is CreatePublicKeyCredentialDomException -> {
-        return e.domError.toString()
-      }
-      is CreateCredentialCancellationException -> {
-        return "UserCancelled"
-      }
-      is CreateCredentialInterruptedException -> {
-        return "Interrupted"
-      }
-      is CreateCredentialProviderConfigurationException -> {
-        return "NotConfigured"
-      }
-      is CreateCredentialUnknownException -> {
-        return "UnknownError"
-      }
-      is CreateCredentialUnsupportedException -> {
-        return "NotSupported"
-      }
-      else -> {
-        return e.toString()
-      }
-    }
-  }
-
-  private fun handleAuthenticationException(e: GetCredentialException): String {
-    when (e) {
-      is GetPublicKeyCredentialDomException -> {
-        return e.domError.toString()
-      }
-      is GetCredentialCancellationException -> {
-        return "UserCancelled"
-      }
-      is GetCredentialInterruptedException -> {
-        return "Interrupted"
-      }
-      is GetCredentialProviderConfigurationException -> {
-        return "NotConfigured"
-      }
-      is GetCredentialUnknownException -> {
-        return "UnknownError"
-      }
-      is GetCredentialUnsupportedException -> {
-        return "NotSupported"
-      }
-      is NoCredentialException -> {
-        return "NoCredentials"
-      }
-      else -> {
-        return e.toString()
+        val claveError = convertAuthenticationException(e)
+        promise.reject(claveError.code, claveError.message)
       }
     }
   }

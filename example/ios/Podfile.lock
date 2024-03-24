@@ -7,7 +7,7 @@ PODS:
     - ExpoModulesCore
   - Expo (50.0.2):
     - ExpoModulesCore
-  - ExpoClavePasskey (0.1.0):
+  - ExpoClavePasskey (0.5.6):
     - ExpoModulesCore
   - ExpoFileSystem (16.0.4):
     - ExpoModulesCore
@@ -1260,7 +1260,7 @@ SPEC CHECKSUMS:
   EXConstants: 988aa430ca0f76b43cd46b66e7fae3287f9cc2fc
   EXFont: 21b9c760abd593ce8f0d5386b558ced76018506f
   Expo: 6c6526e76864e140363431722b22d0fa3cdeafd2
-  ExpoClavePasskey: 23eafacc73fc901fec631d41379a17a73afc70dc
+  ExpoClavePasskey: 430da987348fe221571df10339070c87f5c85bea
   ExpoFileSystem: 39e454b8e7f2358ae2c8f8ec255fede4c3039493
   ExpoKeepAwake: 0f5cad99603a3268e50af9a6eb8b76d0d9ac956c
   ExpoModulesCore: f103ff1346136b2926e1654f32b3f45ab0b74830

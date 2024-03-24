@@ -1,97 +1,120 @@
-export interface PasskeyError {
-    error: string;
-    message: string;
+export class UnknownError extends Error {
+    constructor() {
+        super('An unknown error occurred');
+        this.name = 'UnknownError';
+    }
 }
 
-export const UnknownError: PasskeyError = {
-    error: 'Unknown error',
-    message: 'An unknown error occurred',
-};
+export class NotSupportedError extends Error {
+    constructor() {
+        super('Passkeys are not supported on this device');
+        this.name = 'NotSupportedError';
+    }
+}
 
-export const NotSupportedError: PasskeyError = {
-    error: 'NotSupported',
-    message:
-        'Passkeys are not supported on this device. iOS 15 and above is required to use Passkeys',
-};
+export class RequestFailedError extends Error {
+    constructor() {
+        super('The request failed, no credentials were returned');
+        this.name = 'RequestFailedError';
+    }
+}
 
-export const RequestFailedError: PasskeyError = {
-    error: 'RequestFailed',
-    message: 'The request failed. No Credentials were returned.',
-};
+export class UserCancelledError extends Error {
+    constructor() {
+        super('The user cancelled the request');
+        this.name = 'UserCancelledError';
+    }
+}
 
-export const UserCancelledError: PasskeyError = {
-    error: 'UserCancelled',
-    message: 'The user cancelled the request.',
-};
+export class InvalidChallengeError extends Error {
+    constructor() {
+        super('The provided challenge was invalid');
+        this.name = 'InvalidChallengeError';
+    }
+}
 
-export const InvalidChallengeError: PasskeyError = {
-    error: 'InvalidChallenge',
-    message: 'The provided challenge was invalid',
-};
+export class InvalidRpIdError extends Error {
+    constructor() {
+        super('The provided rpId was invalid');
+        this.name = 'InvalidRpIdError';
+    }
+}
 
-export const InvalidUserIdError: PasskeyError = {
-    error: 'InvalidUserId',
-    message: 'The provided userId was invalid',
-};
+export class InvalidUserIdError extends Error {
+    constructor() {
+        super('The provided userId was invalid');
+        this.name = 'InvalidUserIdError';
+    }
+}
 
-export const NotConfiguredError: PasskeyError = {
-    error: 'NotConfigured',
-    message: 'Your app is not properly configured. Refer to the docs for help.',
-};
+export class NotConfiguredError extends Error {
+    constructor() {
+        super('Your app is not properly configured');
+        this.name = 'NotConfiguredError';
+    }
+}
 
-export const NoCredentialsError: PasskeyError = {
-    error: 'NoCredentials',
-    message: 'No viable credential is available for the user.',
-};
+export class NoCredentialsError extends Error {
+    constructor() {
+        super('No viable credential is available for the user');
+        this.name = 'NoCredentialsError';
+    }
+}
 
-export const InterruptedError: PasskeyError = {
-    error: 'Interrupted',
-    message: 'The operation was interrupted and may be retried.',
-};
+export class InterruptedError extends Error {
+    constructor() {
+        super('The operation was interrupted and may be retried');
+        this.name = 'InterruptedError';
+    }
+}
 
-export const NativeError = (
-    message = 'An unknown error occurred',
-): PasskeyError => {
-    return {
-        error: 'Native error',
-        message: message,
-    };
-};
+export class NativeError extends Error {
+    constructor(message: string) {
+        super('An unknown error occurred');
+        this.name = 'NativeError';
+    }
+}
 
-export function handleNativeError(_error: unknown): PasskeyError {
+export function handleNativeError(_error: unknown): Error {
     if (typeof _error !== 'object') {
-        return UnknownError;
+        return new UnknownError();
     }
 
     const error = String(_error).split(' ')[1];
 
     switch (error) {
         case 'NotSupported': {
-            return NotSupportedError;
+            return new NotSupportedError();
         }
         case 'RequestFailed': {
-            return RequestFailedError;
+            return new RequestFailedError();
         }
         case 'UserCancelled': {
-            return UserCancelledError;
+            return new UserCancelledError();
         }
         case 'InvalidChallenge': {
-            return InvalidChallengeError;
+            return new InvalidChallengeError();
+        }
+        case 'InvalidRpId': {
+            return new InvalidRpIdError();
+        }
+        case 'InvalidUserId': {
+            return new InvalidUserIdError();
         }
         case 'NotConfigured': {
-            return NotConfiguredError;
+            return new NotConfiguredError();
         }
         case 'Interrupted': {
-            return InterruptedError;
+            return new InterruptedError();
         }
         case 'NoCredentials': {
-            return NoCredentialsError;
+            return new NoCredentialsError();
         }
         case 'UnknownError': {
-            return UnknownError;
+            return new UnknownError();
         }
         default: {
-            return NativeError(error);
+            return new NativeError(error);
         }
     }
 }
