@@ -6,6 +6,7 @@ import {
     PasskeyAuthenticationResult,
     PasskeyCreateOptions,
     PasskeyCreateResult,
+    User,
 } from './ExpoClavePasskey.types';
 import { NativeAndroid } from './NativeAndroid';
 import { NativeiOS } from './NativeiOS';
@@ -22,8 +23,7 @@ export class Passkey {
 
     /** Applies defaults to create request */
     static generateCreateRequest(
-        userId: string,
-        userName: string,
+        user: User,
         challenge: string,
         overrides: Partial<PasskeyCreateOptions>,
     ): PasskeyCreateOptions {
@@ -33,11 +33,7 @@ export class Passkey {
                 id: 'getclave.io',
                 name: 'Clave',
             },
-            user: overrides.user ?? {
-                id: userId,
-                name: userName,
-                displayName: userName,
-            },
+            user: overrides.user ?? user,
             pubKeyCredParams: overrides.pubKeyCredParams ?? [
                 { alg: -7, type: 'public-key' }, // ES256 (Webauthn's default algorithm)
             ],
@@ -71,8 +67,7 @@ export class Passkey {
      * @param `override`    Overrides for credential creation
      */
     public static async create(
-        userId: string,
-        userName: string,
+        user: User,
         challenge: string,
         overrides: Partial<PasskeyCreateOptions> = {},
     ): Promise<PasskeyCreateResult> {
@@ -83,8 +78,7 @@ export class Passkey {
         const challengeBase64Url = utils.hexToBase64Url(challenge);
 
         const request = this.generateCreateRequest(
-            userId,
-            userName,
+            user,
             challengeBase64Url,
             overrides,
         );
