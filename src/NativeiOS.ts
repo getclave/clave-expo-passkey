@@ -57,7 +57,7 @@ export class NativeiOS {
         return {
             id: result.credentialID,
             rawId: result.credentialID,
-            type: 'webauthn.create',
+            type: 'public-key',
             response: {
                 clientDataJSON: result.response.rawClientDataJSON,
                 attestationObject: result.response.rawAttestationObject,
@@ -96,7 +96,7 @@ export class NativeiOS {
         return {
             id: result.credentialID,
             rawId: result.credentialID,
-            type: 'webauthn.get',
+            type: 'public-key',
             response: {
                 clientDataJSON: result.response.rawClientDataJSON,
                 authenticatorData: result.response.rawAuthenticatorData,

@@ -103,7 +103,7 @@ export type PasskeyCreateResult = {
     id: string;
     /** Credential ID, same as `id` */
     rawId: string;
-    type: 'webauthn.create';
+    type: 'public-key';
     response: {
         /** Client data JSON, base64url encoded */
         clientDataJSON: string;
@@ -139,7 +139,7 @@ export type PasskeyAuthenticationResult = {
     id: string;
     /** Credential ID, same as `id` */
     rawId: string;
-    type: 'webauthn.get';
+    type: 'public-key';
     response: {
         /** Authenticator data, base64url encoded */
         authenticatorData: string;
