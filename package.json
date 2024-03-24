@@ -1,6 +1,6 @@
 {
   "name": "@getclave/expo-passkey",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Expo module for interacting with Passkeys in Clave",
   "main": "build/index.js",
   "types": "build/index.d.ts",
