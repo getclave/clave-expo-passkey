@@ -2,10 +2,10 @@ import { Platform } from 'react-native';
 import { NotSupportedError } from './ExpoClavePasskey.errors';
 import {
     CredentialDescriptor,
-    PasskeyAuthenticationOptions,
-    PasskeyAuthenticationResult,
-    PasskeyCreateOptions,
-    PasskeyCreateResult,
+    AuthenticationRequest,
+    AuthenticationResult,
+    RegistrationRequest,
+    RegistrationResult,
     User,
 } from './ExpoClavePasskey.types';
 import { NativeAndroid } from './NativeAndroid';
@@ -25,8 +25,8 @@ export class Passkey {
     static generateCreateRequest(
         user: User,
         challenge: string,
-        overrides: Partial<PasskeyCreateOptions>,
-    ): PasskeyCreateOptions {
+        overrides: Partial<RegistrationRequest>,
+    ): RegistrationRequest {
         return {
             challenge,
             rp: overrides.rp ?? {
@@ -49,8 +49,8 @@ export class Passkey {
     static generateAuthenticationRequest(
         credentialIds: Array<string>,
         challenge: string,
-        overrides: Partial<PasskeyAuthenticationOptions>,
-    ): PasskeyAuthenticationOptions {
+        overrides: Partial<AuthenticationRequest>,
+    ): AuthenticationRequest {
         return {
             challenge,
             rpId: overrides.rpId ?? 'getclave.io',
@@ -69,8 +69,8 @@ export class Passkey {
     public static async create(
         user: User,
         challenge: string,
-        overrides: Partial<PasskeyCreateOptions> = {},
-    ): Promise<PasskeyCreateResult> {
+        overrides: Partial<RegistrationRequest> = {},
+    ): Promise<RegistrationResult> {
         if (!Passkey.isSupported) {
             throw new NotSupportedError();
         }
@@ -103,8 +103,8 @@ export class Passkey {
     public static async authenticate(
         credentialIds: Array<string>,
         challenge: string,
-        overrides: Partial<PasskeyAuthenticationOptions> = {},
-    ): Promise<PasskeyAuthenticationResult> {
+        overrides: Partial<AuthenticationRequest> = {},
+    ): Promise<AuthenticationResult> {
         if (!Passkey.isSupported) {
             throw new NotSupportedError();
         }

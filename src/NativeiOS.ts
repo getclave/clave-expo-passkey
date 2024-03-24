@@ -1,9 +1,9 @@
 import { handleNativeError } from './ExpoClavePasskey.errors';
 import {
-    PasskeyCreateOptions,
-    PasskeyCreateResult,
-    PasskeyAuthenticationOptions,
-    PasskeyAuthenticationResult,
+    RegistrationRequest,
+    RegistrationResult,
+    AuthenticationRequest,
+    AuthenticationResult,
 } from './ExpoClavePasskey.types';
 import ExpoClavePasskey from './ExpoClavePasskeyModule';
 
@@ -33,8 +33,8 @@ export class NativeiOS {
      * @returns The FIDO2 Attestation Result in JSON format
      */
     public static async register(
-        request: PasskeyCreateOptions,
-    ): Promise<PasskeyCreateResult> {
+        request: RegistrationRequest,
+    ): Promise<RegistrationResult> {
         try {
             const response = await ExpoClavePasskey.register(
                 request.challenge,
@@ -53,7 +53,7 @@ export class NativeiOS {
      */
     private static parseCreateResult(
         result: iOSCreateResult,
-    ): PasskeyCreateResult {
+    ): RegistrationResult {
         return {
             id: result.credentialID,
             rawId: result.credentialID,
@@ -73,8 +73,8 @@ export class NativeiOS {
      * @returns The FIDO2 Assertion Result in JSON format
      */
     public static async authenticate(
-        request: PasskeyAuthenticationOptions,
-    ): Promise<PasskeyAuthenticationResult> {
+        request: AuthenticationRequest,
+    ): Promise<AuthenticationResult> {
         try {
             const response = await ExpoClavePasskey.authenticate(
                 request.challenge,
@@ -92,7 +92,7 @@ export class NativeiOS {
      */
     private static parseAuthenticationResult(
         result: iOSAuthenticationResult,
-    ): PasskeyAuthenticationResult {
+    ): AuthenticationResult {
         return {
             id: result.credentialID,
             rawId: result.credentialID,

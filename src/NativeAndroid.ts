@@ -1,9 +1,9 @@
 import { handleNativeError } from './ExpoClavePasskey.errors';
 import {
-    PasskeyAuthenticationOptions,
-    PasskeyAuthenticationResult,
-    PasskeyCreateOptions,
-    PasskeyCreateResult,
+    AuthenticationRequest,
+    AuthenticationResult,
+    RegistrationRequest,
+    RegistrationResult,
 } from './ExpoClavePasskey.types';
 import ExpoClavePasskey from './ExpoClavePasskeyModule';
 
@@ -14,8 +14,8 @@ export class NativeAndroid {
      * @returns The FIDO2 Attestation Result in JSON format
      */
     public static async register(
-        request: PasskeyCreateOptions,
-    ): Promise<PasskeyCreateResult> {
+        request: RegistrationRequest,
+    ): Promise<RegistrationResult> {
         try {
             const response = await ExpoClavePasskey.register(
                 JSON.stringify(request),
@@ -32,8 +32,8 @@ export class NativeAndroid {
      * @returns The FIDO2 Assertion Result in JSON format
      */
     public static async authenticate(
-        request: PasskeyAuthenticationOptions,
-    ): Promise<PasskeyAuthenticationResult> {
+        request: AuthenticationRequest,
+    ): Promise<AuthenticationResult> {
         try {
             const response = await ExpoClavePasskey.authenticate(
                 JSON.stringify(request),

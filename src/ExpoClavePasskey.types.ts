@@ -72,7 +72,7 @@ export type AuthenticatorSelectionCriteria = {
 };
 
 /** https://w3c.github.io/webauthn/#dictionary-makecredentialoptions */
-export type PasskeyCreateOptions = {
+export type RegistrationRequest = {
     /** Relying party options */
     rp: RelyingParty;
     /** User options */
@@ -98,7 +98,7 @@ export type PasskeyCreateOptions = {
 };
 
 /** https://w3c.github.io/webauthn/#dictdef-authenticationresponsejson */
-export type PasskeyCreateResult = {
+export type RegistrationResult = {
     /** Credential ID, base64url encoded */
     id: string;
     /** Credential ID, same as `id` */
@@ -113,7 +113,7 @@ export type PasskeyCreateResult = {
 };
 
 /** https://w3c.github.io/webauthn/#dictionary-assertion-options */
-export type PasskeyAuthenticationOptions = {
+export type AuthenticationRequest = {
     /** Challenge, base64url encoded */
     challenge: string;
     /** Timeout for the operation, in milliseconds */
@@ -134,7 +134,7 @@ export type PasskeyAuthenticationOptions = {
 };
 
 /** https://w3c.github.io/webauthn/#dictdef-authenticatorassertionresponsejson */
-export type PasskeyAuthenticationResult = {
+export type AuthenticationResult = {
     /** Credential ID, base64url encoded */
     id: string;
     /** Credential ID, same as `id` */
