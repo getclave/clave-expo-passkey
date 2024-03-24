@@ -33,6 +33,13 @@ export class InvalidChallengeError extends Error {
     }
 }
 
+export class InvalidRpIdError extends Error {
+    constructor() {
+        super('The provided rpId was invalid');
+        this.name = 'InvalidRpIdError';
+    }
+}
+
 export class InvalidUserIdError extends Error {
     constructor() {
         super('The provided userId was invalid');
@@ -87,6 +94,12 @@ export function handleNativeError(_error: unknown): Error {
         }
         case 'InvalidChallenge': {
             return new InvalidChallengeError();
+        }
+        case 'InvalidRpId': {
+            return new InvalidRpIdError();
+        }
+        case 'InvalidUserId': {
+            return new InvalidUserIdError();
         }
         case 'NotConfigured': {
             return new NotConfiguredError();
