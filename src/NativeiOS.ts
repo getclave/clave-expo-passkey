@@ -78,8 +78,8 @@ export class NativeiOS {
         try {
             const response = await ExpoClavePasskey.authenticate(
                 request.challenge,
-                request.allowCredentials?.map(({ id }) => id) ?? [],
                 request.rpId,
+                request.allowCredentials?.map(({ id }) => id) ?? [],
             );
             return this.parseAuthenticationResult(response);
         } catch (error) {
