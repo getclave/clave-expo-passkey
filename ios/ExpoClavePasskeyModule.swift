@@ -38,6 +38,7 @@ public class ExpoClavePasskeyModule: Module {
                 passkeyDelegate.performAuth(for: authController, completion: { error, result in
                     if (error != nil) {
                         promise.rejectWith(passkeyError: self.convertNativeError(error: error!))
+                        return
                     }
                     
                     // Check if the result object contains a valid registration result
@@ -58,7 +59,6 @@ public class ExpoClavePasskeyModule: Module {
                 })
             } else {
                 promise.rejectWith(passkeyError: PasskeyError.NotSupported)
-                return
             }
         }
         
@@ -94,6 +94,7 @@ public class ExpoClavePasskeyModule: Module {
                 passkeyDelegate.performAuth(for: authController, completion: { error, result in
                     if (error != nil) {
                         promise.rejectWith(passkeyError: self.convertNativeError(error: error!))
+                        return
                     }
                     
                     // Check if the result object contains a valid authentication result
@@ -114,7 +115,6 @@ public class ExpoClavePasskeyModule: Module {
                 })
             } else {
                 promise.rejectWith(passkeyError: PasskeyError.NotSupported)
-                return
             }
         }
     }
