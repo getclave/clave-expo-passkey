@@ -71,7 +71,7 @@ export class Passkey {
         challenge: string,
         overrides: Partial<RegistrationRequest> = {},
     ): Promise<RegistrationResult> {
-        if (!Passkey.isSupported) {
+        if (!Passkey.isSupported()) {
             throw new NotSupportedError();
         }
 
@@ -105,7 +105,7 @@ export class Passkey {
         challenge: string,
         overrides: Partial<AuthenticationRequest> = {},
     ): Promise<AuthenticationResult> {
-        if (!Passkey.isSupported) {
+        if (!Passkey.isSupported()) {
             throw new NotSupportedError();
         }
 
